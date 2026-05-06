@@ -18,23 +18,22 @@ class TicTacToeApp:
         self.match_over = False
         self.buttons = [[None for _ in range(3)] for _ in range(3)]
 
-        # 🤖 Настройки ИИ
         self.ai_player = "O"
         self.human_player = "X"
         self.ai_enabled = True
 
         self._setup_ui()
-        self._update_status("Нажми ▶️ Начать партию")
+        self._update_status("Настрой игру и нажми ▶️ Начать партию")
 
     def _setup_ui(self):
         # Заголовок
         tk.Label(self.root, text="КРЕСТИКИ-НОЛИКИ", font=("Arial", 24, "bold"),
                  bg="#1a1a2e", fg="#e94560").pack(pady=(15, 5))
 
-        # Панель выбора (ИЗНАЧАЛЬНО АКТИВНА)
+        # Панель выбора
         choice_frame = tk.Frame(self.root, bg="#16213e")
         choice_frame.pack(pady=10, padx=20, fill="x")
-        self.choice_widgets = []  # Список для управления состоянием виджетов
+        self.choice_widgets = []
 
         tk.Label(choice_frame, text="Вы играете за:", bg="#16213e", fg="white", font=("Arial", 10)).pack(side="left",
                                                                                                          padx=5)
@@ -67,7 +66,7 @@ class TicTacToeApp:
         self.lbl_o.pack(side="right", padx=25)
 
         # Статус
-        self.lbl_status = tk.Label(self.root, text="Нажми ▶️ Начать партию", font=("Arial", 14, "bold"),
+        self.lbl_status = tk.Label(self.root, text="Настрой игру и нажми ▶️ Начать партию", font=("Arial", 14, "bold"),
                                    bg="#1a1a2e", fg="#ffd700", wraplength=450)
         self.lbl_status.pack(pady=10)
 
@@ -85,9 +84,12 @@ class TicTacToeApp:
         # Кнопки управления
         ctrl_frame = tk.Frame(self.root, bg="#1a1a2e")
         ctrl_frame.pack(pady=15)
+
+        # 👇 КНОПКА СТАРТА: изначально активна, привязана к _start_round
         self.btn_start = tk.Button(ctrl_frame, text="▶️ Начать партию", bg="#00c853", fg="white",
                                    font=("Arial", 11, "bold"), command=self._start_round)
         self.btn_start.pack(side="left", padx=8)
+
         tk.Button(ctrl_frame, text="🔄 Сбросить поле", bg="#0f3460", fg="white", font=("Arial", 10, "bold"),
                   command=self._reset_round).pack(side="left", padx=8)
         tk.Button(ctrl_frame, text="🏆 Новый матч", bg="#e94560", fg="white", font=("Arial", 10, "bold"),
@@ -95,13 +97,15 @@ class TicTacToeApp:
         tk.Button(ctrl_frame, text="⚙️ Настройки", bg="#555", fg="white", font=("Arial", 10),
                   command=self._show_settings).pack(side="left", padx=8)
 
-    # === Управление состоянием интерфейса ===
-    def _lock_settings(self):
+    # === Управление интерфейсом ===
+    def _lock_ui_for_game(self):
+        """Блокирует настройки и кнопку старта во время игры"""
         for w in self.choice_widgets:
             w.config(state="disabled")
         self.btn_start.config(state="disabled", bg="#555")
 
-    def _unlock_settings(self):
+    def _unlock_ui(self):
+        """Разблокирует настройки и кнопку старта"""
         for w in self.choice_widgets:
             w.config(state="normal")
         self.btn_start.config(state="normal", bg="#00c853", text="▶️ Начать партию")
@@ -145,36 +149,30 @@ class TicTacToeApp:
             self._update_status(f"Матч теперь до {value} побед. Нажми ▶️ Начать партию")
 
     # === Игровая логика ===
-    def _start_new_match(self):
-        self.scores = {"X": 0, "O": 0}
-        self.match_over = False
-        self._update_scoreboard()
-        self._reset_round()
-        self._unlock_settings()
-        self._update_status("Матч сброшен. Настрой игру и нажми ▶️ Начать партию")
-
     def _start_round(self):
+        """Явный старт партии"""
         if self.match_over:
             self.match_over = False
         self.game_active = True
         self.human_player = self.player_var.get()
         self.ai_player = "O" if self.human_player == "X" else "X"
 
+        # Очищаем и активируем поле
         for i in range(3):
             for j in range(3):
                 self.buttons[i][j].config(text="", bg="#2d2d44", state="normal", fg="white")
 
         self.current_player = "X"
-        self._lock_settings()
+        self._lock_ui_for_game()  # Блокируем настройки и кнопку старта
 
         who_first = "Ты" if self.human_player == "X" else "ИИ"
         self._update_status(f"{'Ваш ход' if who_first == 'Ты' else 'Думает ИИ'} ({self.current_player})...")
 
         if self.ai_enabled and self.current_player == self.ai_player:
-            self._disable_board(True)
-            self.root.after(800, self._ai_move)
+            self.root.after(700, self._ai_move)
 
     def _reset_round(self):
+        """Сброс поля в середине матча"""
         if not self.game_active: return
         for i in range(3):
             for j in range(3):
@@ -182,15 +180,21 @@ class TicTacToeApp:
         self.current_player = "X"
         self._update_status(f"{'Ваш ход' if self.human_player == 'X' else 'Думает ИИ'} ({self.current_player})...")
         if self.ai_enabled and self.current_player == self.ai_player:
-            self._disable_board(True)
-            self.root.after(800, self._ai_move)
+            self.root.after(700, self._ai_move)
 
-    def _disable_board(self, disable: bool):
-        state = "disabled" if disable else "normal"
+    def _start_new_match(self):
+        """Полный сброс матча"""
+        self.scores = {"X": 0, "O": 0}
+        self.match_over = False
+        self.game_active = False
+        self._update_scoreboard()
+
         for i in range(3):
             for j in range(3):
-                if self.buttons[i][j]["text"] == "":
-                    self.buttons[i][j].config(state=state)
+                self.buttons[i][j].config(text="", bg="#2d2d44", state="disabled", fg="white")
+
+        self._unlock_ui()
+        self._update_status("Настрой игру и нажми ▶️ Начать партию")
 
     def _update_status(self, text: str):
         self.lbl_status.config(text=text)
@@ -227,10 +231,18 @@ class TicTacToeApp:
             self.root.after(600, self._ai_move)
         else:
             self._update_status(f"Ваш ход ({self.current_player})")
+            self._disable_board(False)
 
     def _make_move(self, row, col, player):
         color = "#e94560" if player == "X" else "#4da8da"
         self.buttons[row][col].config(text=player, fg=color)
+
+    def _disable_board(self, disable: bool):
+        state = "disabled" if disable else "normal"
+        for i in range(3):
+            for j in range(3):
+                if self.buttons[i][j]["text"] == "":
+                    self.buttons[i][j].config(state=state)
 
     # 🤖 === ЛОГИКА ИИ (МИНИМАКС) ===
     def _ai_move(self):
@@ -315,7 +327,8 @@ class TicTacToeApp:
             self._update_status(final_msg)
             messagebox.showinfo("Матч завершён", final_msg)
             self._disable_board(True)
-            self._unlock_settings()
+            self._unlock_ui()
+            self.btn_start.config(text="▶️ Начать новый матч")
         else:
             self._update_status("Следующая партия через 2 сек...")
             self.root.after(2000, self._reset_round)
