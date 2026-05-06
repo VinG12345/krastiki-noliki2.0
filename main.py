@@ -1,8 +1,6 @@
 import tkinter as tk
-
-# from tkinter import messagebox  # раскомментируй, когда добавишь окна с результатами
-import tkinter as tk
 from tkinter import messagebox
+from typing import Optional  # 👈 Добавили импорт для совместимости
 
 
 class TicTacToeApp:
@@ -13,7 +11,6 @@ class TicTacToeApp:
         self.root.resizable(False, False)
         self.root.configure(bg="#1a1a2e")
 
-        # 🎯 Настройки матча
         self.MATCH_TARGET = 3
         self.scores = {"X": 0, "O": 0}
         self.current_player = "X"
@@ -25,11 +22,9 @@ class TicTacToeApp:
         self._reset_round()
 
     def _setup_ui(self):
-        # Заголовок
         tk.Label(self.root, text="КРЕСТИКИ-НОЛИКИ", font=("Arial", 22, "bold"),
                  bg="#1a1a2e", fg="#e94560").pack(pady=(20, 5))
 
-        # Выбор стороны
         choice_frame = tk.Frame(self.root, bg="#16213e")
         choice_frame.pack(pady=10, padx=20, fill="x")
         tk.Label(choice_frame, text="Вы играете за:", bg="#16213e", fg="white", font=("Arial", 11)).pack(side="left",
@@ -42,7 +37,6 @@ class TicTacToeApp:
         tk.Radiobutton(choice_frame, text="O", variable=self.player_var, value="O", bg="#16213e", fg="white",
                        selectcolor="#0f3460", font=("Arial", 10), command=self._on_player_change).pack(side="left")
 
-        # Счёт
         score_frame = tk.Frame(self.root, bg="#1a1a2e")
         score_frame.pack(pady=10)
         self.lbl_x = tk.Label(score_frame, text="X: 0", font=("Arial", 18, "bold"), fg="#e94560", bg="#1a1a2e")
@@ -50,11 +44,9 @@ class TicTacToeApp:
         self.lbl_o = tk.Label(score_frame, text="O: 0", font=("Arial", 18, "bold"), fg="#4da8da", bg="#1a1a2e")
         self.lbl_o.pack(side="right", padx=30)
 
-        # Статус
         self.lbl_status = tk.Label(self.root, text="Ход: X", font=("Arial", 14), bg="#1a1a2e", fg="#ecf0f1")
         self.lbl_status.pack(pady=5)
 
-        # Поле 3x3
         board_frame = tk.Frame(self.root, bg="#1a1a2e")
         board_frame.pack(pady=10)
         for i in range(3):
@@ -65,7 +57,6 @@ class TicTacToeApp:
                 btn.grid(row=i, column=j, padx=6, pady=6)
                 self.buttons[i][j] = btn
 
-        # Кнопки управления
         ctrl_frame = tk.Frame(self.root, bg="#1a1a2e")
         ctrl_frame.pack(pady=15)
         tk.Button(ctrl_frame, text="🔄 Сбросить поле", bg="#0f3460", fg="white", font=("Arial", 11, "bold"),
@@ -74,13 +65,11 @@ class TicTacToeApp:
                   command=self._start_new_match).pack(side="left", padx=10)
 
     def _on_player_change(self):
-        """Обновляет стартового игрока при смене выбора"""
         if self.game_active and not self.match_over:
             self.current_player = self.player_var.get()
             self.lbl_status.config(text=f"Ход: {self.current_player}")
 
     def _start_new_match(self):
-        """Полный сброс: счёт, поле, состояние матча"""
         self.scores = {"X": 0, "O": 0}
         self.match_over = False
         self._reset_round()
@@ -88,7 +77,6 @@ class TicTacToeApp:
         self.lbl_status.config(text="Матч начат! Ход: X")
 
     def _reset_round(self):
-        """Сброс только поля (сохраняет счёт матча)"""
         if self.match_over:
             self.match_over = False
         self.game_active = True
@@ -104,37 +92,31 @@ class TicTacToeApp:
 
         btn = self.buttons[row][col]
         if btn["text"] != "":
-            return  # Клетка занята
+            return
 
-        # Делаем ход
         color = "#e94560" if self.current_player == "X" else "#4da8da"
         btn.config(text=self.current_player, fg=color)
 
-        # Проверка победы
         winner = self._check_winner()
         if winner:
             self._handle_round_end(winner)
             return
 
-        # Проверка ничьей
         if self._is_board_full():
             messagebox.showinfo("Ничья", "Поле заполнено. Победила дружба!")
             self._reset_round()
             return
 
-        # Передача хода
         self.current_player = "O" if self.current_player == "X" else "X"
         self.lbl_status.config(text=f"Ход: {self.current_player}")
 
-    def _check_winner(self) -> str | None:
+    def _check_winner(self) -> Optional[str]:  # 👈 Исправлено: было -> str | None
         b = self.buttons
-        # Строки и столбцы
         for i in range(3):
             if b[i][0]["text"] == b[i][1]["text"] == b[i][2]["text"] != "":
                 return b[i][0]["text"]
             if b[0][i]["text"] == b[1][i]["text"] == b[2][i]["text"] != "":
                 return b[0][i]["text"]
-        # Диагонали
         if b[0][0]["text"] == b[1][1]["text"] == b[2][2]["text"] != "":
             return b[0][0]["text"]
         if b[0][2]["text"] == b[1][1]["text"] == b[2][0]["text"] != "":
@@ -151,7 +133,6 @@ class TicTacToeApp:
 
         messagebox.showinfo("Партия окончена", f"Игрок {winner} выиграл раунд!")
 
-        # Проверка завершения матча
         if self.scores[winner] >= self.MATCH_TARGET:
             self.match_over = True
             self.lbl_status.config(text=f"🏆 МАТЧ ЗАВЕРШЁН! Победитель: {winner}")
@@ -161,7 +142,6 @@ class TicTacToeApp:
                     self.buttons[i][j].config(state="disabled")
         else:
             self.lbl_status.config(text=f"{winner} побеждает! Следующая партия...")
-            # Авто-старт следующей партии через 1.2 сек для динамики
             self.root.after(1200, self._reset_round)
 
     def _update_scoreboard(self):
