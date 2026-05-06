@@ -23,7 +23,8 @@ class TicTacToeApp:
         self.ai_enabled = True
 
         self._setup_ui()
-        self._update_status("Выбери настройки и нажми СТАРТ")
+        self._unlock_controls()  # 👈 ЯВНО РАЗБЛОКИРУЕМ НАСТРОЙКИ ПРИ ЗАПУСКЕ
+        self._update_status("Выбери сторону и нажми СТАРТ", "#ffd700")
 
     def _setup_ui(self):
         tk.Label(self.root, text="КРЕСТИКИ-НОЛИКИ", font=("Arial", 22, "bold"),
@@ -36,12 +37,14 @@ class TicTacToeApp:
         self.player_var = tk.StringVar(value="X")
 
         rb_x = tk.Radiobutton(settings_frame, text="X", variable=self.player_var, value="X", bg="#16213e", fg="white",
-                              selectcolor="#0f3460", font=("Arial", 9), command=self._on_settings_change)
+                              selectcolor="#0f3460", font=("Arial", 9), state="normal",
+                              command=self._on_settings_change)
         rb_x.pack(side="left", padx=5)
         self.settings_widgets.append(rb_x)
 
         rb_o = tk.Radiobutton(settings_frame, text="O", variable=self.player_var, value="O", bg="#16213e", fg="white",
-                              selectcolor="#0f3460", font=("Arial", 9), command=self._on_settings_change)
+                              selectcolor="#0f3460", font=("Arial", 9), state="normal",
+                              command=self._on_settings_change)
         rb_o.pack(side="left")
         self.settings_widgets.append(rb_o)
 
@@ -49,11 +52,12 @@ class TicTacToeApp:
 
         self.ai_var = tk.BooleanVar(value=True)
         cb_ai = tk.Checkbutton(settings_frame, text="🤖 ИИ", variable=self.ai_var, bg="#16213e", fg="#4da8da",
-                               selectcolor="#0f3460", font=("Arial", 9), command=self._on_settings_change)
+                               selectcolor="#0f3460", font=("Arial", 9), state="normal",
+                               command=self._on_settings_change)
         cb_ai.pack(side="left")
         self.settings_widgets.append(cb_ai)
 
-        # 👇 КНОПКА СТАРТ: явно активная, с отладкой
+        # Кнопка СТАРТ
         self.start_btn = tk.Button(self.root, text="▶️ НАЧАТЬ ИГРУ", bg="#00c853", fg="white",
                                    font=("Arial", 14, "bold"), command=self._start_game, state="normal")
         self.start_btn.pack(pady=10)
@@ -93,8 +97,9 @@ class TicTacToeApp:
             self.human_player = self.player_var.get()
             self.ai_player = "O" if self.human_player == "X" else "X"
             self.ai_enabled = self.ai_var.get()
+            print(f"🔧 Настройки: Ты={self.human_player}, ИИ={self.ai_player}, ИИ_включен={self.ai_enabled}")
             first = "Ты (X)" if self.human_player == "X" else "ИИ (X)"
-            self._update_status(f"Первым ходит: {first}. Нажми СТАРТ.")
+            self._update_status(f"Первым ходит: {first}. Нажми СТАРТ.", "#ffd700")
 
     def _update_status(self, text, color="#ffd700"):
         self.status_lbl.config(text=text, fg=color)
@@ -110,7 +115,7 @@ class TicTacToeApp:
         self.start_btn.config(state="normal", bg="#00c853", text="▶️ НАЧАТЬ ИГРУ")
 
     def _start_game(self):
-        print("✅ КНОПКА СТАРТ НАЖАТА!")  # <-- Смотри консоль PyCharm
+        print("✅ СТАРТ НАЖАТ. Запуск партии...")
         if self.match_over:
             self.match_over = False
         self.game_active = True
@@ -151,7 +156,7 @@ class TicTacToeApp:
             for j in range(3):
                 self.buttons[i][j].config(text="", state="disabled", bg="#2d2d44")
         self._unlock_controls()
-        self._update_status("Матч сброшен. Нажми СТАРТ.", "#ffd700")
+        self._on_settings_change()  # Обновляем статус под текущие настройки
 
     def _on_cell_click(self, row, col):
         if not self.game_active or self.match_over: return
