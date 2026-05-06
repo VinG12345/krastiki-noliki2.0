@@ -14,7 +14,7 @@ class TicTacToeApp:
         self.MATCH_TARGET = 3
         self.scores = {"X": 0, "O": 0}
         self.current_player = "X"
-        self.game_active = False  # 👈 ИГРА НЕ АКТИВНА ПОКА НЕ НАЖМУТ "НАЧАТЬ"
+        self.game_active = False
         self.match_over = False
         self.buttons = [[None for _ in range(3)] for _ in range(3)]
 
@@ -31,26 +31,32 @@ class TicTacToeApp:
         tk.Label(self.root, text="КРЕСТИКИ-НОЛИКИ", font=("Arial", 24, "bold"),
                  bg="#1a1a2e", fg="#e94560").pack(pady=(15, 5))
 
-        # Панель выбора
+        # Панель выбора (ИЗНАЧАЛЬНО АКТИВНА)
         choice_frame = tk.Frame(self.root, bg="#16213e")
         choice_frame.pack(pady=10, padx=20, fill="x")
+        self.choice_widgets = []  # Список для управления состоянием виджетов
 
         tk.Label(choice_frame, text="Вы играете за:", bg="#16213e", fg="white", font=("Arial", 10)).pack(side="left",
                                                                                                          padx=5)
         self.player_var = tk.StringVar(value="X")
-        tk.Radiobutton(choice_frame, text="X", variable=self.player_var, value="X", bg="#16213e", fg="white",
-                       selectcolor="#0f3460", font=("Arial", 9), command=self._on_player_change, state="disabled").pack(
-            side="left")
-        tk.Radiobutton(choice_frame, text="O", variable=self.player_var, value="O", bg="#16213e", fg="white",
-                       selectcolor="#0f3460", font=("Arial", 9), command=self._on_player_change, state="disabled").pack(
-            side="left", padx=10)
+
+        rb_x = tk.Radiobutton(choice_frame, text="X", variable=self.player_var, value="X", bg="#16213e", fg="white",
+                              selectcolor="#0f3460", font=("Arial", 9), command=self._on_player_change)
+        rb_x.pack(side="left")
+        self.choice_widgets.append(rb_x)
+
+        rb_o = tk.Radiobutton(choice_frame, text="O", variable=self.player_var, value="O", bg="#16213e", fg="white",
+                              selectcolor="#0f3460", font=("Arial", 9), command=self._on_player_change)
+        rb_o.pack(side="left", padx=10)
+        self.choice_widgets.append(rb_o)
 
         tk.Label(choice_frame, text="|", bg="#16213e", fg="#555").pack(side="left", padx=5)
 
         self.ai_var = tk.BooleanVar(value=True)
-        tk.Checkbutton(choice_frame, text="🤖 ИИ-противник", variable=self.ai_var, bg="#16213e", fg="#4da8da",
-                       selectcolor="#0f3460", font=("Arial", 9), command=self._on_ai_toggle, state="disabled").pack(
-            side="left")
+        cb_ai = tk.Checkbutton(choice_frame, text="🤖 ИИ-противник", variable=self.ai_var, bg="#16213e", fg="#4da8da",
+                               selectcolor="#0f3460", font=("Arial", 9), command=self._on_ai_toggle)
+        cb_ai.pack(side="left")
+        self.choice_widgets.append(cb_ai)
 
         # Счёт
         score_frame = tk.Frame(self.root, bg="#1a1a2e")
@@ -60,12 +66,12 @@ class TicTacToeApp:
         self.lbl_o = tk.Label(score_frame, text="O: 0", font=("Arial", 18, "bold"), fg="#4da8da", bg="#1a1a2e")
         self.lbl_o.pack(side="right", padx=25)
 
-        # Статус — теперь крупнее и информативнее
+        # Статус
         self.lbl_status = tk.Label(self.root, text="Нажми ▶️ Начать партию", font=("Arial", 14, "bold"),
                                    bg="#1a1a2e", fg="#ffd700", wraplength=450)
         self.lbl_status.pack(pady=10)
 
-        # Поле 3x3 — изначально заблокировано
+        # Поле 3x3 (изначально заблокировано)
         board_frame = tk.Frame(self.root, bg="#1a1a2e")
         board_frame.pack(pady=10)
         for i in range(3):
@@ -89,10 +95,19 @@ class TicTacToeApp:
         tk.Button(ctrl_frame, text="⚙️ Настройки", bg="#555", fg="white", font=("Arial", 10),
                   command=self._show_settings).pack(side="left", padx=8)
 
+    # === Управление состоянием интерфейса ===
+    def _lock_settings(self):
+        for w in self.choice_widgets:
+            w.config(state="disabled")
+        self.btn_start.config(state="disabled", bg="#555")
+
+    def _unlock_settings(self):
+        for w in self.choice_widgets:
+            w.config(state="normal")
+        self.btn_start.config(state="normal", bg="#00c853", text="▶️ Начать партию")
+
     def _on_player_change(self):
-        """Обновляет игроков при смене выбора (только до начала партии)"""
-        if self.game_active:
-            return
+        if self.game_active: return
         self.human_player = self.player_var.get()
         self.ai_player = "O" if self.human_player == "X" else "X"
         first = "крестиками (X)" if self.human_player == "X" else "ноликами (O)"
@@ -100,14 +115,10 @@ class TicTacToeApp:
         self._update_status(f"Ты играешь {first}. Первым ходит {second}.")
 
     def _on_ai_toggle(self):
-        """Включение/выключение ИИ"""
-        if self.game_active:
-            return
+        if self.game_active: return
         self.ai_enabled = self.ai_var.get()
-        if self.ai_enabled:
-            self._update_status("ИИ включён. Выбери сторону и нажми ▶️ Начать партию")
-        else:
-            self._update_status("ИИ выключен. Игра вдвоём. Нажми ▶️ Начать партию")
+        status = "ИИ включён." if self.ai_enabled else "ИИ выключен. Игра вдвоём."
+        self._update_status(f"{status} Выбери сторону и нажми ▶️ Начать партию")
 
     def _show_settings(self):
         settings_win = tk.Toplevel(self.root)
@@ -125,7 +136,6 @@ class TicTacToeApp:
             tk.Radiobutton(target_frame, text=str(val), variable=tk.IntVar(value=self.MATCH_TARGET),
                            value=val, bg="#16213e", fg="#4da8da", selectcolor="#0f3460",
                            command=lambda v=val: self._set_match_target(v)).pack(side="left", padx=10)
-
         tk.Button(settings_win, text="Закрыть", command=settings_win.destroy, bg="#0f3460", fg="white",
                   font=("Arial", 10)).pack(pady=10)
 
@@ -134,101 +144,83 @@ class TicTacToeApp:
         if not self.game_active:
             self._update_status(f"Матч теперь до {value} побед. Нажми ▶️ Начать партию")
 
+    # === Игровая логика ===
     def _start_new_match(self):
-        """Полный сброс: счёт, настройки, состояние"""
         self.scores = {"X": 0, "O": 0}
         self.match_over = False
         self._update_scoreboard()
         self._reset_round()
-        self._update_status("Матч сброшен. Нажми ▶️ Начать партию")
+        self._unlock_settings()
+        self._update_status("Матч сброшен. Настрой игру и нажми ▶️ Начать партию")
 
     def _start_round(self):
-        """Явный старт партии — теперь всё предсказуемо"""
         if self.match_over:
             self.match_over = False
-
-        # Обновляем игроков на основе выбора
+        self.game_active = True
         self.human_player = self.player_var.get()
         self.ai_player = "O" if self.human_player == "X" else "X"
 
-        # Сбрасываем поле
         for i in range(3):
             for j in range(3):
                 self.buttons[i][j].config(text="", bg="#2d2d44", state="normal", fg="white")
 
-        # Первый ход — всегда у крестиков
         self.current_player = "X"
-        self.game_active = True
+        self._lock_settings()
 
-        # Обновляем статус
         who_first = "Ты" if self.human_player == "X" else "ИИ"
         self._update_status(f"{'Ваш ход' if who_first == 'Ты' else 'Думает ИИ'} ({self.current_player})...")
 
-        # Если ИИ ходит первым — даём ему ход с задержкой
         if self.ai_enabled and self.current_player == self.ai_player:
             self._disable_board(True)
             self.root.after(800, self._ai_move)
 
     def _reset_round(self):
-        """Сброс только поля (без изменения счёта)"""
-        if not self.game_active and not self.match_over:
-            return  # Нельзя сбросить то, что не начато
+        if not self.game_active: return
         for i in range(3):
             for j in range(3):
-                self.buttons[i][j].config(text="", bg="#2d2d44", state="normal" if self.game_active else "disabled",
-                                          fg="white")
+                self.buttons[i][j].config(text="", bg="#2d2d44", state="normal", fg="white")
         self.current_player = "X"
-        self.game_active = True
         self._update_status(f"{'Ваш ход' if self.human_player == 'X' else 'Думает ИИ'} ({self.current_player})...")
         if self.ai_enabled and self.current_player == self.ai_player:
             self._disable_board(True)
             self.root.after(800, self._ai_move)
 
     def _disable_board(self, disable: bool):
-        """Блокировка/разблокировка поля для визуального фидбека"""
         state = "disabled" if disable else "normal"
         for i in range(3):
             for j in range(3):
-                if self.buttons[i][j]["text"] == "":  # только пустые клетки
+                if self.buttons[i][j]["text"] == "":
                     self.buttons[i][j].config(state=state)
 
     def _update_status(self, text: str):
-        """Обновление статуса с цветовой индикацией"""
         self.lbl_status.config(text=text)
         if "ИИ" in text or "Думает" in text:
-            self.lbl_status.config(fg="#4da8da")  # синий — ход ИИ
+            self.lbl_status.config(fg="#4da8da")
         elif "Ваш ход" in text or "Ты" in text:
-            self.lbl_status.config(fg="#00c853")  # зелёный — твой ход
+            self.lbl_status.config(fg="#00c853")
         elif "побед" in text.lower() or "матч" in text.lower():
-            self.lbl_status.config(fg="#ffd700")  # золотой — информация
+            self.lbl_status.config(fg="#ffd700")
         else:
-            self.lbl_status.config(fg="#ecf0f1")  # белый — по умолчанию
+            self.lbl_status.config(fg="#ecf0f1")
 
     def _on_click(self, row, col):
-        if not self.game_active or self.match_over:
-            return
-        if self.ai_enabled and self.current_player == self.ai_player:
-            return  # Запрещаем клики, когда ход ИИ
+        if not self.game_active or self.match_over: return
+        if self.ai_enabled and self.current_player == self.ai_player: return
 
         btn = self.buttons[row][col]
-        if btn["text"] != "":
-            return
+        if btn["text"] != "": return
 
         self._make_move(row, col, self.current_player)
-
         winner = self._check_winner()
         if winner:
             self._handle_round_end(winner)
             return
-
         if self._is_board_full():
             messagebox.showinfo("Ничья", "Поле заполнено. Победила дружба!")
             self._reset_round()
             return
 
         self.current_player = "O" if self.current_player == "X" else "X"
-
-        # Обновляем статус
         if self.ai_enabled and self.current_player == self.ai_player:
             self._update_status("Думает ИИ...")
             self._disable_board(True)
@@ -242,12 +234,9 @@ class TicTacToeApp:
 
     # 🤖 === ЛОГИКА ИИ (МИНИМАКС) ===
     def _ai_move(self):
-        if not self.game_active or self.match_over:
-            return
-
+        if not self.game_active or self.match_over: return
         best_score = -float("inf")
         best_move = None
-
         for i in range(3):
             for j in range(3):
                 if self.buttons[i][j]["text"] == "":
@@ -257,11 +246,9 @@ class TicTacToeApp:
                     if score > best_score:
                         best_score = score
                         best_move = (i, j)
-
         if best_move:
             row, col = best_move
             self._make_move(row, col, self.ai_player)
-
             winner = self._check_winner()
             if winner:
                 self._handle_round_end(winner)
@@ -270,20 +257,15 @@ class TicTacToeApp:
                 messagebox.showinfo("Ничья", "Поле заполнено. Победила дружба!")
                 self._reset_round()
                 return
-
             self.current_player = self.human_player
             self._update_status(f"Ваш ход ({self.current_player})")
             self._disable_board(False)
 
     def _minimax(self, depth, is_maximizing):
         winner = self._check_winner()
-        if winner == self.ai_player:
-            return 10 - depth
-        if winner == self.human_player:
-            return depth - 10
-        if self._is_board_full():
-            return 0
-
+        if winner == self.ai_player: return 10 - depth
+        if winner == self.human_player: return depth - 10
+        if self._is_board_full(): return 0
         if is_maximizing:
             best_score = -float("inf")
             for i in range(3):
@@ -310,14 +292,10 @@ class TicTacToeApp:
     def _check_winner(self) -> Optional[str]:
         b = self.buttons
         for i in range(3):
-            if b[i][0]["text"] == b[i][1]["text"] == b[i][2]["text"] != "":
-                return b[i][0]["text"]
-            if b[0][i]["text"] == b[1][i]["text"] == b[2][i]["text"] != "":
-                return b[0][i]["text"]
-        if b[0][0]["text"] == b[1][1]["text"] == b[2][2]["text"] != "":
-            return b[0][0]["text"]
-        if b[0][2]["text"] == b[1][1]["text"] == b[2][0]["text"] != "":
-            return b[0][2]["text"]
+            if b[i][0]["text"] == b[i][1]["text"] == b[i][2]["text"] != "": return b[i][0]["text"]
+            if b[0][i]["text"] == b[1][i]["text"] == b[2][i]["text"] != "": return b[0][i]["text"]
+        if b[0][0]["text"] == b[1][1]["text"] == b[2][2]["text"] != "": return b[0][0]["text"]
+        if b[0][2]["text"] == b[1][1]["text"] == b[2][0]["text"] != "": return b[0][2]["text"]
         return None
 
     def _is_board_full(self) -> bool:
@@ -327,7 +305,6 @@ class TicTacToeApp:
         self.game_active = False
         self.scores[winner] += 1
         self._update_scoreboard()
-
         result_text = "🎉 Ты победил!" if winner == self.human_player else "🤖 ИИ победил!"
         messagebox.showinfo("Партия окончена",
                             result_text + f"\nСчёт: Вы {self.scores[self.human_player]} - {self.scores[self.ai_player]} ИИ")
@@ -338,7 +315,7 @@ class TicTacToeApp:
             self._update_status(final_msg)
             messagebox.showinfo("Матч завершён", final_msg)
             self._disable_board(True)
-            self.btn_start.config(state="normal", text="▶️ Начать новую партию")
+            self._unlock_settings()
         else:
             self._update_status("Следующая партия через 2 сек...")
             self.root.after(2000, self._reset_round)
