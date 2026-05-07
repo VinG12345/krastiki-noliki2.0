@@ -227,7 +227,7 @@ class TicTacToeApp:
 
     def _ai_move(self):
         if not self.game_active: return
-        print("🤖 ИИ считает...")
+        print("[AI] Calculating...")
         board = self._get_board_state()
         best_score = -float("inf")
         best_move = None
